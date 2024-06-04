@@ -36,16 +36,21 @@ COLLECTIONS_TO_ADD = [
         "identifier": "bbmri-eric:ID:CZ_MMCI:collection:Tissue",
         "name": "Tissue",
         "acronym": ""
+    },
+    {
+        "identifier": "bbmri-eric:ID:CZ_MMCI:collection:Controll_cohort_Serum",
+        "name": "Serum",
+        "acronym": "Serum"
     }
 ]
 
 TYPE_TO_COLLECTION = {
-    "tissue-frozen": "bbmri-eric:ID:CZ_MMCI:collection:Cells",
-    "tissue-other": "bbmri-eric:ID:CZ_MMCI:collection:Cells",
+    "tissue-frozen": "bbmri-eric:ID:CZ_MMCI:collection:Tissue",
+    "tissue-other": "bbmri-eric:ID:CZ_MMCI:collection:Tissue",
     "peripheral-blood-cells-vital": "bbmri-eric:ID:CZ_MMCI:collection:Cells",
     "blood-plasma": "bbmri-eric:ID:CZ_MMCI:collection:Blood_samples",
     "liquid-other": "bbmri-eric:ID:CZ_MMCI:collection:Blood_samples",
-    "serum": "bbmri-eric:ID:CZ_MMCI:collection:Blood_samples",
+    "serum": "bbmri-eric:ID:CZ_MMCI:collection:Controll_cohort_Serum",
     "dna": "bbmri-eric:ID:CZ_MMCI:collection:DNA",
 }
 
@@ -155,7 +160,10 @@ def update_resources(resource_type: str):
                             # collection_id = TYPE_TO_COLLECTION[
                             #     resource["extension"][0]["valueCodeableConcept"]["coding"][0]["code"]]
                             # MMCI
-                            collection_id = TYPE_TO_COLLECTION[resource["type"]["coding"][0]["code"]]
+                            if "type" not in resource:
+                                collection_id = "bbmri-eric:ID:CZ_MMCI:collection:Other"
+                            else:
+                                collection_id = TYPE_TO_COLLECTION[resource["type"]["coding"][0]["code"]]
                             if extension["valueReference"]["reference"] != "Organization/" + ORGANIZATION_TO_ID[
                                 collection_id]:
                                 extension["valueReference"]["reference"] = "Organization/" + ORGANIZATION_TO_ID[
