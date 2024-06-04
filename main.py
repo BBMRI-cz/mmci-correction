@@ -1,3 +1,4 @@
+import logging
 import time
 
 import requests
@@ -5,7 +6,10 @@ from requests.adapters import HTTPAdapter, Retry
 
 from config import BLAZE_AUTH, BLAZE_URL
 from sample_collection import SampleCollection
+from custom_logger import setup_logger
 
+setup_logger()
+logger = logging.getLogger(__name__)
 
 COLLECTIONS_TO_ADD = [
     {
@@ -66,20 +70,20 @@ def is_endpoint_available(endpoint_url, max_attempts=10, wait_time=60) -> bool:
     :return: true if reachable, false otherwise
     """
     attempts = 0
-    print(f"Attempting to reach endpoint: '{endpoint_url}'.")
+    logger.info(f"Attempting to reach endpoint: '{endpoint_url}'.")
     while attempts < max_attempts:
         try:
             response = session.get(endpoint_url, verify=False, auth=BLAZE_AUTH)
             response.raise_for_status()
-            print(f"Endpoint '{endpoint_url}' is available.")
+            logger.info(f"Endpoint '{endpoint_url}' is available.")
             return True
         except requests.exceptions.RequestException as e:
-            print(
+            logger.info(
                 f"Attempt {attempts + 1}/{max_attempts}: Endpoint not available yet. Retrying in {wait_time} seconds.")
             attempts += 1
             time.sleep(wait_time)
 
-    print(f"Endpoint '{endpoint_url}' was not available after {max_attempts} attempts.")
+    logger.info(f"Endpoint '{endpoint_url}' was not available after {max_attempts} attempts.")
     return False
 
 
@@ -109,7 +113,7 @@ def populate_collections():
             if not is_resource_present_in_blaze("Organization", fhir_collection.identifier):
                 session.post(url=BLAZE_URL + "/Organization", json=fhir_collection.to_fhir(), verify=False)
     except requests.exceptions.ConnectionError:
-        print("Cannot connect to blaze!")
+        logger.info("Cannot connect to blaze!")
         return 0
 
 
@@ -121,7 +125,7 @@ def populate_collections_ids():
             resource = entry["resource"]
             ORGANIZATION_TO_ID[resource["identifier"][0]["value"]] = resource["id"]
     except requests.exceptions.ConnectionError:
-        print("Cannot connect to blaze!")
+        logger.info("Cannot connect to blaze!")
         return 0
 
 
@@ -133,7 +137,7 @@ def update_resources(resource_type: str):
             response_json = request_response.json()
             for entry in response_json["entry"]:
                 resource = entry["resource"]
-                print("working on resource with id", resource["id"])
+                logger.info(f"working on resource with id {resource['id']}")
                 updated = False
                 collection_present = False
                 for extension in resource["extension"]:
@@ -141,7 +145,7 @@ def update_resources(resource_type: str):
                         collection_present = True
 
                         # collection_id = TYPE_TO_COLLECTION[
-                            # resource["extension"][0]["valueCodeableConcept"]["coding"][0]["code"]]
+                        #     resource["extension"][0]["valueCodeableConcept"]["coding"][0]["code"]]
                         # MMCI
                         collection_id = TYPE_TO_COLLECTION[resource["type"]["coding"][0]["code"]]
                         if extension["valueReference"]["reference"] != "Organization/" + ORGANIZATION_TO_ID[
@@ -149,7 +153,7 @@ def update_resources(resource_type: str):
                             extension["valueReference"]["reference"] = "Organization/" + ORGANIZATION_TO_ID[
                                 collection_id]
                             updated = True
-                            print(f"resource with id {resource['id']} Updated")
+                            logger.info(f"resource with id {resource['id']} Updated")
                 if not collection_present:
                     updated = True
                     # collection_id = TYPE_TO_COLLECTION[
@@ -159,11 +163,11 @@ def update_resources(resource_type: str):
                     extension = {"url": "https://fhir.bbmri.de/StructureDefinition/Custodian",
                                  "valueReference": {"reference": "Organization/" + ORGANIZATION_TO_ID[collection_id]}}
                     resource["extension"].append(extension)
-                    print(f"resource with id {resource['id']} got a new extension")
+                    logger.info(f"resource with id {resource['id']} got a new extension")
                 if updated:
                     request_response = session.put(url=BLAZE_URL + f"/{resource_type.capitalize()}/{resource['id']}",
                                                    json=resource, verify=False)
-                    print(f"updating resource with id {resource['id']} resulted in {request_response.status_code}")
+                    logger.info(f"updating resource with id {resource['id']} resulted in {request_response.status_code}")
             next_link_dict = response_json["link"][-1]
             if next_link_dict["relation"] != "next":
                 break
@@ -174,7 +178,7 @@ def update_resources(resource_type: str):
             request_response = session.get(url=next_link)
 
     except requests.exceptions.ConnectionError:
-        print("Cannot connect to blaze!")
+        logger.info("Cannot connect to blaze!")
         return 0
 
 
