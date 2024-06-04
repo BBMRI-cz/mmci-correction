@@ -98,7 +98,7 @@ def is_resource_present_in_blaze(resource_type: str, identifier: str) -> bool:
     try:
         count = (session.get(
             url=BLAZE_URL + f"/{resource_type.capitalize()}?identifier={identifier}&_summary=count",
-            verify=False)
+            verify=False, auth=BLAZE_AUTH)
                  .json()
                  .get("total"))
         return count > 0
@@ -108,33 +108,36 @@ def is_resource_present_in_blaze(resource_type: str, identifier: str) -> bool:
 
 def populate_collections():
     try:
+        logger.info("Populating collections in Blaze.")
         for collection in COLLECTIONS_TO_ADD:
             fhir_collection = SampleCollection(identifier=collection["identifier"])
             if not is_resource_present_in_blaze("Organization", fhir_collection.identifier):
-                session.post(url=BLAZE_URL + "/Organization", json=fhir_collection.to_fhir().as_json(), verify=False)
+                session.post(url=BLAZE_URL + "/Organization", json=fhir_collection.to_fhir().as_json(), verify=False, auth=BLAZE_AUTH)
                 logger.info(f"Added collection {fhir_collection.identifier} to Blaze.")
+            else:
+                logger.info(f"Collection {fhir_collection.identifier} already present in Blaze.")
     except requests.exceptions.ConnectionError:
-        logger.info("Cannot connect to blaze!")
+        logger.info("While Populating collections: Cannot connect to blaze!")
         return 0
 
 
 def populate_collections_ids():
     try:
-        request_response = session.get(url=BLAZE_URL + "/Organization")
+        request_response = session.get(url=BLAZE_URL + "/Organization", verify=False, auth=BLAZE_AUTH)
         response_json = request_response.json()
         for entry in response_json["entry"]:
             resource = entry["resource"]
             ORGANIZATION_TO_ID[resource["identifier"][0]["value"]] = resource["id"]
             logger.info(f"Added key-value pair {resource['identifier'][0]['value']} : {resource['id']} to ORGANIZATION_TO_ID")
     except requests.exceptions.ConnectionError:
-        logger.info("Cannot connect to blaze!")
+        logger.info("While populating ORGANIZATION_TO_ID:Cannot connect to blaze!")
         return 0
 
 
 def update_resources(resource_type: str):
     try:
         request_response = session.get(url=BLAZE_URL + f"/{resource_type.capitalize()}",
-                                       verify=False)
+                                       verify=False, auth=BLAZE_AUTH)
         while request_response.status_code == 200:
             response_json = request_response.json()
             for entry in response_json["entry"]:
@@ -168,7 +171,7 @@ def update_resources(resource_type: str):
                     logger.info(f"resource with id {resource['id']} got a new extension")
                 if updated:
                     request_response = session.put(url=BLAZE_URL + f"/{resource_type.capitalize()}/{resource['id']}",
-                                                   json=resource, verify=False)
+                                                   json=resource, verify=False, auth=BLAZE_AUTH)
                     logger.info(f"updating resource with id {resource['id']} resulted in {request_response.status_code}")
             next_link_dict = response_json["link"][-1]
             if next_link_dict["relation"] != "next":
@@ -177,10 +180,10 @@ def update_resources(resource_type: str):
             if url_fhir_part_index == -1:
                 break
             next_link = BLAZE_URL + next_link_dict["url"][url_fhir_part_index + len("/fhir"):]
-            request_response = session.get(url=next_link)
+            request_response = session.get(url=next_link, verify=False, auth=BLAZE_AUTH)
 
     except requests.exceptions.ConnectionError:
-        logger.info("Cannot connect to blaze!")
+        logger.info("While working on Cannot connect to blaze!")
         return 0
 
 
