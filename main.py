@@ -144,22 +144,27 @@ def update_resources(resource_type: str):
                 resource = entry["resource"]
                 logger.info(f"working on resource with id {resource['id']}")
                 updated = False
+                extension_present = False
                 collection_present = False
-                for extension in resource["extension"]:
-                    if extension["url"] == 'https://fhir.bbmri.de/StructureDefinition/Custodian':
-                        collection_present = True
+                if "extension" in resource:
+                    extension_present = True
+                    for extension in resource["extension"]:
+                        if extension["url"] == 'https://fhir.bbmri.de/StructureDefinition/Custodian':
+                            collection_present = True
 
-                        # collection_id = TYPE_TO_COLLECTION[
-                        #     resource["extension"][0]["valueCodeableConcept"]["coding"][0]["code"]]
-                        # MMCI
-                        collection_id = TYPE_TO_COLLECTION[resource["type"]["coding"][0]["code"]]
-                        if extension["valueReference"]["reference"] != "Organization/" + ORGANIZATION_TO_ID[
-                            collection_id]:
-                            extension["valueReference"]["reference"] = "Organization/" + ORGANIZATION_TO_ID[
-                                collection_id]
-                            updated = True
-                            logger.info(f"resource with id {resource['id']} Updated")
+                            # collection_id = TYPE_TO_COLLECTION[
+                            #     resource["extension"][0]["valueCodeableConcept"]["coding"][0]["code"]]
+                            # MMCI
+                            collection_id = TYPE_TO_COLLECTION[resource["type"]["coding"][0]["code"]]
+                            if extension["valueReference"]["reference"] != "Organization/" + ORGANIZATION_TO_ID[
+                                collection_id]:
+                                extension["valueReference"]["reference"] = "Organization/" + ORGANIZATION_TO_ID[
+                                    collection_id]
+                                updated = True
+                                logger.info(f"resource with id {resource['id']} Updated")
                 if not collection_present:
+                    if not extension_present:
+                        resource["extension"] = []
                     updated = True
                     # collection_id = TYPE_TO_COLLECTION[
                     #     resource["extension"][0]["valueCodeableConcept"]["coding"][0]["code"]]
