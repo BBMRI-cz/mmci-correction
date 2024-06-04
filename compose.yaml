@@ -1,0 +1,14 @@
+services:
+  mmci-correction:
+    image: mmci_correction
+    container_name: mmci-correction-container
+    profiles:
+      - prod
+    restart: no
+    environment:
+      BLAZE_URL: "http://host.docker.internal:8080/fhir"
+      BLAZE_USER: ""
+      BLAZE_PASS: ""
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
