@@ -163,13 +163,18 @@ def update_resources(resource_type: str):
                                 updated = True
                                 logger.info(f"resource with id {resource['id']} Updated")
                 if not collection_present:
-                    if not extension_present:
-                        resource["extension"] = []
                     updated = True
                     # collection_id = TYPE_TO_COLLECTION[
                     #     resource["extension"][0]["valueCodeableConcept"]["coding"][0]["code"]]
                     # MMCI
-                    collection_id = TYPE_TO_COLLECTION[resource["type"]["coding"][0]["code"]]
+                    if not extension_present:
+                        if resource["type"]["coding"][0]["code"] not in TYPE_TO_COLLECTION:
+                            collection_id = "bbmri-eric:ID:CZ_MMCI:collection:Other"
+                        else:
+                            collection_id = TYPE_TO_COLLECTION[resource["type"]["coding"][0]["code"]]
+                        resource["extension"] = []
+                    else:
+                        collection_id = TYPE_TO_COLLECTION[resource["type"]["coding"][0]["code"]]
                     extension = {"url": "https://fhir.bbmri.de/StructureDefinition/Custodian",
                                  "valueReference": {"reference": "Organization/" + ORGANIZATION_TO_ID[collection_id]}}
                     resource["extension"].append(extension)
