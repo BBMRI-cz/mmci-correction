@@ -111,7 +111,7 @@ def populate_collections():
         for collection in COLLECTIONS_TO_ADD:
             fhir_collection = SampleCollection(identifier=collection["identifier"])
             if not is_resource_present_in_blaze("Organization", fhir_collection.identifier):
-                session.post(url=BLAZE_URL + "/Organization", json=fhir_collection.to_fhir(), verify=False)
+                session.post(url=BLAZE_URL + "/Organization", json=fhir_collection.to_fhir().as_json(), verify=False)
     except requests.exceptions.ConnectionError:
         logger.info("Cannot connect to blaze!")
         return 0
