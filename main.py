@@ -112,6 +112,7 @@ def populate_collections():
             fhir_collection = SampleCollection(identifier=collection["identifier"])
             if not is_resource_present_in_blaze("Organization", fhir_collection.identifier):
                 session.post(url=BLAZE_URL + "/Organization", json=fhir_collection.to_fhir().as_json(), verify=False)
+                logger.info(f"Added collection {fhir_collection.identifier} to Blaze.")
     except requests.exceptions.ConnectionError:
         logger.info("Cannot connect to blaze!")
         return 0
@@ -124,6 +125,7 @@ def populate_collections_ids():
         for entry in response_json["entry"]:
             resource = entry["resource"]
             ORGANIZATION_TO_ID[resource["identifier"][0]["value"]] = resource["id"]
+            logger.info(f"Added key-value pair {resource['identifier'][0]['value']} : {resource['id']} to ORGANIZATION_TO_ID")
     except requests.exceptions.ConnectionError:
         logger.info("Cannot connect to blaze!")
         return 0
@@ -186,4 +188,5 @@ if __name__ == '__main__':
     is_endpoint_available(BLAZE_URL,5,5)
     populate_collections()
     populate_collections_ids()
+    logger.info(f"ORGANIZATION_TO_ID: {str(ORGANIZATION_TO_ID)}")
     update_resources("Specimen")
