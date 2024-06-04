@@ -168,7 +168,7 @@ def update_resources(resource_type: str):
                     #     resource["extension"][0]["valueCodeableConcept"]["coding"][0]["code"]]
                     # MMCI
                     if not extension_present:
-                        if resource["type"]["coding"][0]["code"] not in TYPE_TO_COLLECTION:
+                        if resource["type"] not in TYPE_TO_COLLECTION:
                             collection_id = "bbmri-eric:ID:CZ_MMCI:collection:Other"
                         else:
                             collection_id = TYPE_TO_COLLECTION[resource["type"]["coding"][0]["code"]]
